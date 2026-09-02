@@ -83,6 +83,14 @@ fun MainGameScreen(
 
     val isTopLevelRoute = baseRoute in listOf("settlement", "map", "squad", "market", "menu")
 
+    val screensWithDedicatedHeader = setOf(
+        "settings", "help", "about", "licenses", "save", "load", "game_menu", "quests",
+        "combat", "reputation", "residents", "economy", "arrival", "expedition_prep",
+        "debug_save", "content_browser", "generator_debug", "ui_gallery",
+        "visual_asset_browser", "audio_gallery"
+    )
+    val shouldShowTopHUD = baseRoute !in screensWithDedicatedHeader
+
     var showEventsDialog by remember { mutableStateOf(false) }
     var showTimeDialog by remember { mutableStateOf(false) }
     val notificationController = remember { VisualNotificationController() }
@@ -142,21 +150,23 @@ fun MainGameScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 containerColor = FrontierDarkBackground,
-                contentWindowInsets = WindowInsets.statusBars,
+                contentWindowInsets = WindowInsets.navigationBars,
                 topBar = {
-                    GameTopHUD(
-                        day = gameState.day,
-                        gameDateTime = gameState.gameDateTime,
-                        resources = gameState.resources,
-                        settlement = gameState.settlement,
-                        onNextDayClick = { viewModel.nextDay() },
-                        onTimeClick = { showTimeDialog = true },
-                        onEconomyClick = { navController.navigate("economy") },
-                        onWarehouseClick = { navController.navigate("warehouse") },
-                        onEventsClick = { showEventsDialog = true },
-                        onMenuClick = { navController.navigate("game_menu") },
-                        hasUnreadEvents = gameState.quests.any { it.status == QuestStatus.READY_TO_CLAIM }
-                    )
+                    if (shouldShowTopHUD) {
+                        GameTopHUD(
+                            day = gameState.day,
+                            gameDateTime = gameState.gameDateTime,
+                            resources = gameState.resources,
+                            settlement = gameState.settlement,
+                            onNextDayClick = { viewModel.nextDay() },
+                            onTimeClick = { showTimeDialog = true },
+                            onEconomyClick = { navController.navigate("economy") },
+                            onWarehouseClick = { navController.navigate("warehouse") },
+                            onEventsClick = { showEventsDialog = true },
+                            onMenuClick = { navController.navigate("game_menu") },
+                            hasUnreadEvents = gameState.quests.any { it.status == QuestStatus.READY_TO_CLAIM }
+                        )
+                    }
                 },
                 bottomBar = {
                     if (isTopLevelRoute) {

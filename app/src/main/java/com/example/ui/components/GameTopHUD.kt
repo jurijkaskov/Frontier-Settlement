@@ -93,6 +93,7 @@ fun GameTopHUD(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .padding(top = 8.dp, bottom = 10.dp, start = 12.dp, end = 12.dp)
         ) {
             // Row 1: Day, Time of Day, Credits, Reputation, Events, Menu, Next Day Button

@@ -101,7 +101,7 @@ fun GameBottomNav(
             containerColor = FrontierDarkSurface,
             contentColor = TextWhite,
             windowInsets = WindowInsets.navigationBars,
-            modifier = Modifier.height(72.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             tabs.forEach { tab ->
                 val isSelected = currentRoute == tab.route
