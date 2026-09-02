@@ -1,0 +1,6 @@
+{
+  "name": "Frontier Settlement",
+  "description": "2D survival settlement strategy with turn-based expeditions, post-apocalyptic resource management, and world exploration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
