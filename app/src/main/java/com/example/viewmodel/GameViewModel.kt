@@ -1578,6 +1578,10 @@ class GameViewModel(
      * Executes a specific chosen action in the current active event.
      */
     fun executeEventChoice(choiceId: String, actorId: String? = null) {
+        var startCombat = false
+        var expForCombat: Expedition? = null
+        var sourceEventId: String? = null
+
         _gameState.update { state ->
             val exp = state.activeExpedition ?: return@update state
             val activeEvt = exp.activeEventState ?: return@update state
@@ -1590,24 +1594,8 @@ class GameViewModel(
                 ?: exp.leader?.id
                 ?: exp.squad.first().id
 
-            // Check if choice requires combat
-            if (choice.successOutcome.requiresCombat) {
-                val outcome = choice.successOutcome
-                val updatedExp = exp.copy(
-                    activeEventState = activeEvt.copy(
-                        selectedChoiceId = choiceId,
-                        resolvedOutcome = outcome,
-                        selectedActorId = effectiveActorId,
-                        isResolved = true
-                    ),
-                    logs = exp.logs + listOf(outcome.narrativeText)
-                )
-                startCombatEncounter(updatedExp)
-                return@update state
-            }
-
             // Resolve outcome using deterministic EventOutcomeResolver
-            val (updatedState, _) = EventOutcomeResolver.resolve(
+            val (updatedState, resolutionResult) = EventOutcomeResolver.resolve(
                 event = event,
                 choice = choice,
                 gameState = state,
@@ -1616,7 +1604,22 @@ class GameViewModel(
                 seed = activeEvt.instanceSeed
             )
 
+            if (resolutionResult.requiresCombat) {
+                startCombat = true
+                expForCombat = resolutionResult.updatedExpedition
+                sourceEventId = event.id
+            }
+
             updatedState
+        }
+
+        // Trigger combat initiation outside the StateFlow.update CAS loop to prevent ANR reentrancy
+        if (startCombat && expForCombat != null) {
+            startCombatEncounter(
+                expedition = expForCombat,
+                sourceEventId = sourceEventId,
+                sourceChoiceId = choiceId
+            )
         }
     }
 
@@ -1871,12 +1874,17 @@ class GameViewModel(
     private fun executeEnemyTurnsIfNeeded() {
         var currentCombat = _gameState.value.activeCombat ?: return
         var loopSafety = 0
+        var hasChanges = false
 
         while (currentCombat.currentActiveCombatant?.team == CombatantTeam.ENEMY && !currentCombat.isEnded && loopSafety < 10) {
             val updatedCombat = EnemyTurnResolver.resolveEnemyTurn(currentCombat)
             currentCombat = updatedCombat
-            _gameState.update { s -> s.copy(activeCombat = currentCombat) }
+            hasChanges = true
             loopSafety++
+        }
+
+        if (hasChanges) {
+            _gameState.update { s -> s.copy(activeCombat = currentCombat) }
         }
     }
 
@@ -1920,6 +1928,8 @@ class GameViewModel(
             val updatedExp = exp.copy(
                 status = ExpeditionStatus.EXPLORING,
                 phase = ExpeditionPhase.EXPLORING,
+                activeEventState = null,
+                currentEvent = null,
                 squad = updatedSquad,
                 gatheredLoot = exp.gatheredLoot.add(combat.bonusLoot),
                 xpReward = exp.xpReward + xpGain,
@@ -1965,6 +1975,8 @@ class GameViewModel(
             val updatedExp = exp.copy(
                 status = ExpeditionStatus.RETURNING,
                 phase = ExpeditionPhase.RETURNING,
+                activeEventState = null,
+                currentEvent = null,
                 squad = updatedSquad,
                 logs = exp.logs + listOf("⚠️ Отряд вышел из боя и начал экстренную эвакуацию в поселение.")
             )

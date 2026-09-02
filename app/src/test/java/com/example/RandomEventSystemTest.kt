@@ -182,4 +182,45 @@ class RandomEventSystemTest {
         val isRepeatAllowed = EventSelector.isRepeatAllowed(onceEvent, stateWithEventCompleted, expedition)
         assertFalse("GLOBAL_ONCE event must not be allowed to repeat", isRepeatAllowed)
     }
+
+    @Test
+    fun testCombatEventOutcomeResolution_initiatesCombatEncounterProperly() {
+        val combatEvent = EventCatalog.eventMysteriousNoise
+        val ambushChoice = combatEvent.choices.find { it.id == "choice_tactical_ambush" }
+        assertNotNull(ambushChoice)
+        assertTrue("Ambush choice must require combat", ambushChoice!!.successOutcome.requiresCombat)
+
+        val activeEvt = ActiveEventState(
+            eventId = combatEvent.id,
+            event = combatEvent,
+            instanceSeed = 9999L
+        )
+        val expWithEvent = expedition.copy(activeEventState = activeEvt)
+
+        val (updatedState, result) = EventOutcomeResolver.resolve(
+            event = combatEvent,
+            choice = ambushChoice,
+            gameState = gameState,
+            expedition = expWithEvent,
+            actorId = expedition.squad.first().id,
+            seed = 9999L
+        )
+
+        assertTrue("Resolution result must require combat", result.requiresCombat)
+        assertNotNull(result.updatedExpedition.activeEventState?.resolvedOutcome)
+
+        // Verify that combat encounter can be created seamlessly without infinite loops
+        val combat = com.example.domain.service.combat.CombatInitiator.createCombatEncounter(
+            expedition = result.updatedExpedition,
+            gameState = updatedState,
+            sourceEventId = combatEvent.id,
+            sourceChoiceId = ambushChoice.id
+        )
+
+        assertNotNull(combat)
+        assertFalse(combat.isEnded)
+        assertTrue(combat.combatants.any { it.team == CombatantTeam.PLAYER })
+        assertTrue(combat.combatants.any { it.team == CombatantTeam.ENEMY })
+        assertTrue(combat.turnOrder.isNotEmpty())
+    }
 }

@@ -701,7 +701,8 @@ fun EventOutcomeDisplay(
     val outcome = activeState.resolvedOutcome ?: return
     val skillResult = activeState.resolvedSkillCheckResult
     val isSuccess = skillResult?.isSuccess ?: true
-    val isCombat = activeState.event.choices.find { it.id == activeState.selectedChoiceId }?.successOutcome?.requiresCombat == true
+    val isCombat = activeState.resolvedOutcome?.requiresCombat == true ||
+        activeState.event.choices.find { it.id == activeState.selectedChoiceId }?.successOutcome?.requiresCombat == true
 
     val statusColor = when {
         isCombat -> DangerCrimson
