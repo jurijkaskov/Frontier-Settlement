@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -109,6 +110,20 @@ fun ExpeditionLiveScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = onBackToSettlement,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .testTag("btn_back_to_base_header")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "В поселение",
+                                    tint = TextWhite,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
@@ -310,27 +325,88 @@ fun ExpeditionLiveScreen(
             }
         }
 
-        // Return to Base Action Button
-        if (exp.status == ExpeditionStatus.RETURNING || exp.status == ExpeditionStatus.COMPLETED) {
-            item {
-                Button(
-                    onClick = onFinishAndReturn,
-                    colors = ButtonDefaults.buttonColors(containerColor = SafeEmerald),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .testTag("btn_return_settlement")
-                ) {
-                    Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Завершить вылазку и доставить добычу",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = FrontierOnPrimary
+        // Action controls for continuing exploration or returning to base
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (exp.status == ExpeditionStatus.RETURNING || exp.status == ExpeditionStatus.COMPLETED) {
+                    Button(
+                        onClick = onFinishAndReturn,
+                        colors = ButtonDefaults.buttonColors(containerColor = SafeEmerald),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("btn_return_settlement")
+                    ) {
+                        Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Завершить вылазку и доставить добычу",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = FrontierOnPrimary
+                            )
                         )
-                    )
+                    }
+                } else if (exp.currentEvent == null) {
+                    // Expedition is exploring or at location, and no active event card is waiting for input
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = onContinueExploration,
+                            colors = ButtonDefaults.buttonColors(containerColor = TechCyan),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(52.dp)
+                                .testTag("btn_continue_exploration")
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = FrontierDarkBackground,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (exp.currentStep < exp.maxSteps) {
+                                    "Исследовать дальше (${exp.currentStep + 1}/${exp.maxSteps})"
+                                } else {
+                                    "Завершить разведку"
+                                },
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = FrontierDarkBackground
+                                )
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onFinishAndReturn,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SafeEmerald),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, SafeEmerald),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .testTag("btn_evacuate_to_base")
+                        ) {
+                            Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "На базу",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = SafeEmerald
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
